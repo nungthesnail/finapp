@@ -1,0 +1,9 @@
+{
+  "name": "finwise/api",
+  "description": "FinWiseAi API",
+  "type": "project",
+  "require": {
+    "php": "^8.3"
+  }
+}
+

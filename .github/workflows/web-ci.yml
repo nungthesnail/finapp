@@ -1,0 +1,17 @@
+name: web-ci
+
+on:
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - "scripts/ci/web-test.sh"
+      - ".github/workflows/web-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Web smoke tests
+        run: bash scripts/ci/web-test.sh
+

@@ -1,0 +1,55 @@
+services:
+  web:
+    image: nginx:1.27-alpine
+    container_name: finwise-web
+    volumes:
+      - ./apps/web/public:/usr/share/nginx/html:ro
+    networks:
+      - finwise
+
+  api:
+    image: php:8.3-cli-alpine
+    container_name: finwise-api
+    working_dir: /var/www/api
+    command: ["php", "-S", "0.0.0.0:8000", "-t", "public", "public/router.php"]
+    volumes:
+      - ./apps/api:/var/www/api
+    networks:
+      - finwise
+
+  mysql:
+    image: mysql:8.0
+    container_name: finwise-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: finwise
+      MYSQL_USER: finwise
+      MYSQL_PASSWORD: finwise
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - finwise
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: finwise-nginx
+    depends_on:
+      - web
+      - api
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infra/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - finwise
+
+networks:
+  finwise:
+    driver: bridge
+
+volumes:
+  mysql_data:
+

@@ -1,0 +1,12 @@
+openapi: 3.1.0
+info:
+  title: FinWiseAi API
+  version: 0.0.1
+paths:
+  /api/health:
+    get:
+      summary: API health endpoint
+      responses:
+        "200":
+          description: healthy
+

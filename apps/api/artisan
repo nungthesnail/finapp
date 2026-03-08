@@ -1,0 +1,4 @@
+#!/usr/bin/env php
+<?php
+echo "Laravel will be initialized in next stages.\n";
+

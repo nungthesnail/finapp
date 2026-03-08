@@ -1,0 +1,22 @@
+name: e2e-smoke
+
+on:
+  pull_request:
+    paths:
+      - "docker-compose.yml"
+      - "apps/**"
+      - "infra/docker/**"
+      - "scripts/ci/e2e-smoke.sh"
+      - ".github/workflows/e2e.yml"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: E2E smoke
+        run: bash scripts/ci/e2e-smoke.sh
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+

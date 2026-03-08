@@ -38,6 +38,7 @@
 - Уведомления (in-app + подготовка к push).
 - Админ-панель (тарифы, пользователи, подписки, базовая аналитика, чат поддержки).
 - Техническая поддержка (чат user-admin).
+- Web-приложение в формате PWA.
 - Доп. страницы: landing, privacy policy, help.
 
 ### 3.2 Post-MVP (можно позже)
@@ -51,7 +52,9 @@
 
 ## 4.1 Аутентификация и аккаунт
 
-- Email/password регистрация и логин.
+- Данные пользователя: номер телефона и email.
+- Логин по номеру телефона + пароль.
+- Сессия пользователя сохраняется между перезапусками приложения до logout/истечения.
 - Восстановление пароля.
 - Редактирование профиля.
 - Ролевой доступ `USER/ADMIN`.
@@ -59,6 +62,8 @@
 ## 4.2 Финансовые сущности
 
 - Счета: название, тип, валюта, текущий баланс.
+- Категории доходов и категории расходов (раздельные справочники или единый справочник с типом).
+- Возможность выбрать категорию по умолчанию для быстрого добавления дохода и расхода.
 - Операции: доход/расход, сумма, категория, дата/время, описание, счет.
 - Плановые операции: операции с датой в будущем.
 - Периодические операции: периодичность (daily/weekly/monthly/custom), дата начала, дата окончания (опционально).
@@ -81,6 +86,11 @@
 
 ## 4.5 AI-агент
 
+- Несколько пользовательских чатов с AI-агентом.
+- По умолчанию открывается последний активный чат.
+- Пользователь может выбрать чат из списка чатов.
+- Для фоновых периодических задач создается технический чат.
+- Технический чат не отображается в пользовательском списке чатов.
 - Чат с выбором модели.
 - Streaming ответа.
 - Tool/function вызовы для безопасных операций над данными пользователя.
@@ -104,7 +114,7 @@
 - In-app список уведомлений.
 - Типы: системные, финплан, подписка, AI-контроль.
 - Расписание для AI-контроля (periodic jobs).
-- Готовность к push-уведомлениям.
+- Push-уведомления на устройство реализуются через инструментарий PWA.
 
 ## 4.8 Поддержка и админка
 
@@ -132,7 +142,7 @@
 
 ## 6. Технологии
 
-- Frontend: JavaScript, Vue.js.
+- Frontend: JavaScript, Vue.js, PWA (Service Worker + Web App Manifest).
 - Backend: PHP 8.5, Laravel, REST API, Eloquent.
 - БД: MySQL 8.
 - LLM: OpenAI API, хранение моделей/тарифов токенов/диалогов в БД, API-ключи в конфиге.
@@ -147,7 +157,7 @@
 
 ## 8. Целевая архитектура
 
-- `apps/web` (Vue SPA): UI, routing, state management, графики, чат.
+- `apps/web` (Vue PWA): UI, routing, state management, графики, чат, push-уведомления.
 - `apps/api` (Laravel): auth, billing, finance, ai orchestration, admin, notifications.
 - Интеграции: OpenAI (chat/tool calls).
 - Интеграции: YooMoney (checkout + webhooks).
@@ -159,13 +169,15 @@
 
 - `users`, `roles`, `user_roles`
 - `accounts`
-- `categories`
+- `income_categories`
+- `expense_categories`
+- `user_category_defaults`
 - `transactions`
 - `recurring_transactions`
 - `budget_plans`
 - `budget_plan_categories`
 - `budget_plan_items`
-- `ai_conversations`
+- `ai_conversations` (`last_active_at`, `is_technical`)
 - `ai_messages`
 - `ai_usage_logs` (tokens/cost/model)
 - `subscriptions`
@@ -179,12 +191,19 @@
 
 - `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`
 - `GET/PUT /me`
+- `POST /auth/login` принимает `phone` и `password`.
 - `GET/POST/PUT/DELETE /accounts`
+- `GET/POST/PUT/DELETE /income-categories`
+- `GET/POST/PUT/DELETE /expense-categories`
+- `GET/PUT /users/category-defaults`
 - `GET/POST/PUT/DELETE /transactions`
 - `GET/POST/PUT/DELETE /recurring-transactions`
 - `GET/POST/PUT/DELETE /budget-plans`
 - `GET /analytics/summary`, `GET /analytics/timeseries`, `GET /analytics/categories`
 - `POST /ai/chat/stream`
+- `GET /ai/chats`, `POST /ai/chats`, `GET /ai/chats/last-active`
+- `POST /ai/chats/{id}/messages/stream`
+- Технические чаты исключаются из `GET /ai/chats`.
 - `GET /subscriptions/me`, `POST /subscriptions/checkout`
 - `POST /payments/yoomoney/webhook`
 - `GET /notifications`, `PATCH /notifications/{id}/read`
@@ -237,11 +256,16 @@
     web/
       package.json
       vite.config.js
+      public/
+        manifest.webmanifest
+        icons/
       src/
         app/
           router/
           store/
           providers/
+          pwa/
+            service-worker.js
         pages/
           landing/
           auth/
@@ -261,7 +285,6 @@
           lib/
           api/
           config/
-      public/
       tests/
         unit/
         e2e/
