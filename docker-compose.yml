@@ -1,17 +1,19 @@
 services:
   web:
-    image: nginx:1.27-alpine
+    image: node:20-alpine
     container_name: finwise-web
+    working_dir: /app
+    command: ["sh", "-lc", "npm install && npm run dev -- --host 0.0.0.0 --port 5173"]
     volumes:
-      - ./apps/web/public:/usr/share/nginx/html:ro
+      - ./apps/web:/app
     networks:
       - finwise
 
   api:
-    image: php:8.3-cli-alpine
+    image: php:8.4-cli-alpine
     container_name: finwise-api
     working_dir: /var/www/api
-    command: ["php", "-S", "0.0.0.0:8000", "-t", "public", "public/router.php"]
+    command: ["sh", "-lc", "php artisan serve --host=0.0.0.0 --port=8000"]
     volumes:
       - ./apps/api:/var/www/api
     networks:
@@ -52,4 +54,3 @@ networks:
 
 volumes:
   mysql_data:
-

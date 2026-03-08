@@ -1,33 +1,44 @@
 # FinWiseAi
 
-AI-финансовый консультант (монорепо): frontend, backend, инфраструктура и документация.
+Monorepo for AI financial assistant.
 
-## Быстрый старт (Этап 0)
+## Stack
 
-Требования:
-- Docker + Docker Compose
+- Frontend: Vue 3 + Vite (`apps/web`)
+- Backend: Laravel 12 (`apps/api`)
+- DB: MySQL 8 container (Laravel tests use SQLite in-memory)
+- Reverse proxy: Nginx (`localhost:8080`)
 
-Запуск:
+## Run locally
 
 ```bash
 docker compose up -d
 ```
 
-Проверка:
+Open:
 - Web: `http://localhost:8080`
 - API health: `http://localhost:8080/api/health`
 
-Остановка:
+Demo admin:
+- phone: `+79990000000`
+- password: `admin123`
+
+Stop:
 
 ```bash
 docker compose down
 ```
 
-## Структура
+## Backend checks
 
-- `apps/web` - frontend (Vue/PWA, на этапе 0 каркас).
-- `apps/api` - backend (Laravel target, на этапе 0 минимальный PHP API stub).
-- `docs` - документация и архитектурные материалы.
-- `infra` - docker и CI-конфигурация.
-- `scripts` - dev/ci/db скрипты.
+```bash
+docker compose exec -T api php artisan migrate:fresh --seed --force
+docker compose exec -T api php artisan test
+```
+
+## Frontend check
+
+```bash
+docker compose exec -T web npm run build
+```
 

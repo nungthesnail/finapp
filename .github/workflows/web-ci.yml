@@ -12,6 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
       - name: Web smoke tests
         run: bash scripts/ci/web-test.sh
-
+      - name: Install deps
+        run: cd apps/web && npm ci
+      - name: Build
+        run: cd apps/web && npm run build

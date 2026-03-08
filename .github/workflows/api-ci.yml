@@ -15,7 +15,8 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.4"
+      - name: Install dependencies
+        run: cd apps/api && composer install --no-interaction --prefer-dist
       - name: API smoke tests
         run: bash scripts/ci/api-test.sh
-

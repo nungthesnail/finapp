@@ -1,0 +1,86 @@
+:root {
+  font-family: Arial, sans-serif;
+  color: #f7f7f7;
+  background: #101010;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top right, #341c11, #101010);
+}
+
+#app {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.page {
+  display: grid;
+  gap: 12px;
+}
+
+.top h1 {
+  margin: 0;
+}
+
+.card {
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid #2b2b2b;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.row {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  align-items: center;
+}
+
+.grid2 {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+input,
+select,
+button {
+  min-height: 34px;
+  border-radius: 8px;
+  border: 1px solid #343434;
+  background: #141414;
+  color: #f7f7f7;
+  padding: 6px 10px;
+}
+
+button {
+  background: #ff7400;
+  color: #18110b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+td,
+th {
+  border-bottom: 1px solid #333;
+  padding: 6px 4px;
+  text-align: left;
+  font-size: 13px;
+}
+
+pre {
+  white-space: pre-wrap;
+}
+
