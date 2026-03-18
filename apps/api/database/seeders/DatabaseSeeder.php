@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\ExpenseCategory;
 use App\Models\IncomeCategory;
+use App\Models\Tariff;
 use App\Models\User;
 use App\Models\UserCategoryDefault;
 use Illuminate\Database\Seeder;
@@ -51,5 +52,25 @@ class DatabaseSeeder extends Seeder
                 'expense_category_id' => $expense->id,
             ]);
         }
+
+        Tariff::query()->firstOrCreate(
+            ['name' => 'Start'],
+            [
+                'description' => 'Base plan',
+                'duration_days' => 30,
+                'price_rub' => 499,
+                'is_active' => true,
+            ]
+        );
+
+        Tariff::query()->firstOrCreate(
+            ['name' => 'Pro'],
+            [
+                'description' => 'Advanced plan',
+                'duration_days' => 30,
+                'price_rub' => 999,
+                'is_active' => true,
+            ]
+        );
     }
 }

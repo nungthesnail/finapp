@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'yoomoney' => [
+        'enabled' => env('YOOMONEY_ENABLED', false),
+        'base_url' => env('YOOMONEY_BASE_URL', 'https://api.yookassa.ru/v3'),
+        'shop_id' => env('YOOMONEY_SHOP_ID'),
+        'secret_key' => env('YOOMONEY_SECRET_KEY'),
+        'webhook_secret' => env('YOOMONEY_WEBHOOK_SECRET'),
+    ],
+
 ];

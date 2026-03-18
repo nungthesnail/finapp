@@ -66,6 +66,15 @@ button {
   cursor: pointer;
 }
 
+a {
+  color: #ff7400;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -84,3 +93,11 @@ pre {
   white-space: pre-wrap;
 }
 
+.log {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 8px;
+  margin: 8px 0;
+}
