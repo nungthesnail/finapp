@@ -38,7 +38,7 @@ self.addEventListener('push', (event) => {
   const payload = event.data ? event.data.json() : {}
   const title = payload.title || 'FinWiseAi'
   const options = {
-    body: payload.body || 'You have a new notification',
+    body: payload.body || 'У вас новое уведомление',
     data: payload.data || {},
   }
   event.waitUntil(self.registration.showNotification(title, options))

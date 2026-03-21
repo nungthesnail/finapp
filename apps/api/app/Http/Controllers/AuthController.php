@@ -6,6 +6,7 @@ use App\Models\ExpenseCategory;
 use App\Models\IncomeCategory;
 use App\Models\User;
 use App\Models\UserCategoryDefault;
+use App\Models\CreditLedgerEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -27,6 +28,7 @@ class AuthController extends Controller
         ]);
 
         $this->ensureDefaults($user);
+        $this->grantTrialCredit($user->id);
 
         $request->session()->put('uid', $user->id);
         $request->session()->regenerate();
@@ -81,5 +83,29 @@ class AuthController extends Controller
             'expense_category_id' => $expense->id,
         ]);
     }
-}
 
+    private function grantTrialCredit(int $userId): void
+    {
+        $amount = (float) config('ai.free_trial_credit', 0);
+        if ($amount <= 0) {
+            return;
+        }
+
+        $exists = CreditLedgerEntry::query()
+            ->where('user_id', $userId)
+            ->where('entry_type', 'trial_credit')
+            ->exists();
+        if ($exists) {
+            return;
+        }
+
+        CreditLedgerEntry::query()->create([
+            'user_id' => $userId,
+            'payment_id' => null,
+            'entry_type' => 'trial_credit',
+            'amount' => $amount,
+            'currency' => 'RUB',
+            'description' => 'AI trial credit',
+        ]);
+    }
+}

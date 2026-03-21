@@ -12,6 +12,11 @@ class AiMessage extends Model
         'role',
         'content',
         'model',
+        'is_hidden',
+    ];
+
+    protected $casts = [
+        'is_hidden' => 'boolean',
     ];
 
     public function conversation()
@@ -19,4 +24,3 @@ class AiMessage extends Model
         return $this->belongsTo(AiConversation::class, 'conversation_id');
     }
 }
-

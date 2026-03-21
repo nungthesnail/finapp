@@ -27,5 +27,9 @@ class Payment extends Model
         'paid_at' => 'datetime',
         'processed_at' => 'datetime',
     ];
-}
 
+    public function tariff()
+    {
+        return $this->belongsTo(Tariff::class, 'tariff_id');
+    }
+}

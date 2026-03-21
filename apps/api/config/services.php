@@ -43,4 +43,10 @@ return [
         'webhook_secret' => env('YOOMONEY_WEBHOOK_SECRET'),
     ],
 
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+        'timeout' => (int) env('OPENAI_TIMEOUT', 45),
+    ],
+
 ];

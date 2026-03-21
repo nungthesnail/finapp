@@ -27,6 +27,44 @@ class BillingController extends Controller
         return response()->json(['items' => $items]);
     }
 
+    public function overview(Request $request)
+    {
+        $user = $this->requireUser($request);
+        $now = now();
+
+        $activeSubscription = Subscription::query()
+            ->with('tariff')
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->where('end_at', '>=', $now)
+            ->orderByDesc('end_at')
+            ->first();
+
+        $balance = (float) CreditLedgerEntry::query()
+            ->where('user_id', $user->id)
+            ->sum('amount');
+
+        $ledger = CreditLedgerEntry::query()
+            ->where('user_id', $user->id)
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get();
+
+        $payments = Payment::query()
+            ->with('tariff')
+            ->where('user_id', $user->id)
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get();
+
+        return response()->json([
+            'active_subscription' => $activeSubscription,
+            'credit_balance_rub' => round($balance, 2),
+            'ledger' => $ledger,
+            'payments' => $payments,
+        ]);
+    }
+
     public function checkout(Request $request)
     {
         $user = $this->requireUser($request);

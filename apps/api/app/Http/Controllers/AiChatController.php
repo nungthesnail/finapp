@@ -4,12 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\AiConversation;
 use App\Models\AiMessage;
-use App\Models\Transaction;
-use App\Models\User;
+use App\Models\AiModel;
+use App\Services\Ai\AiBillingService;
+use App\Services\Ai\AiChatLoopService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class AiChatController extends Controller
 {
+    public function __construct(
+        private readonly AiBillingService $billingService,
+        private readonly AiChatLoopService $chatLoopService
+    ) {
+    }
+
     public function index(Request $request)
     {
         $user = $this->requireUser($request);
@@ -32,13 +41,17 @@ class AiChatController extends Controller
             'selected_model' => ['nullable', 'string', 'max:64'],
         ]);
 
+        $selectedModel = $this->resolveModelCode($data['selected_model'] ?? null);
+
         $conversation = AiConversation::query()->create([
             'user_id' => $user->id,
             'title' => $data['title'] ?? 'New chat',
-            'selected_model' => $data['selected_model'] ?? 'gpt-4.1-mini',
+            'selected_model' => $selectedModel,
             'is_technical' => false,
             'last_active_at' => now(),
         ]);
+
+        $this->ensureSystemMessage($conversation->id, $user->id, $selectedModel);
 
         return response()->json(['item' => $conversation], 201);
     }
@@ -58,14 +71,17 @@ class AiChatController extends Controller
             $conversation = AiConversation::query()->create([
                 'user_id' => $user->id,
                 'title' => 'New chat',
-                'selected_model' => 'gpt-4.1-mini',
+                'selected_model' => $this->resolveModelCode(null),
                 'is_technical' => false,
                 'last_active_at' => now(),
             ]);
         }
 
+        $this->ensureSystemMessage($conversation->id, $user->id, (string) $conversation->selected_model);
+
         $messages = AiMessage::query()
             ->where('conversation_id', $conversation->id)
+            ->where('is_hidden', false)
             ->orderBy('id')
             ->get();
 
@@ -89,34 +105,78 @@ class AiChatController extends Controller
             'model' => ['nullable', 'string', 'max:64'],
         ]);
 
-        $model = $data['model'] ?? ($conversation->selected_model ?: 'gpt-4.1-mini');
+        $selectedModelCode = $this->resolveModelCode($data['model'] ?? $conversation->selected_model);
+        $model = AiModel::query()
+            ->where('code', $selectedModelCode)
+            ->where('is_active', true)
+            ->firstOrFail();
 
-        $userMessage = AiMessage::query()->create([
-            'conversation_id' => $conversation->id,
-            'user_id' => $user->id,
-            'role' => 'user',
-            'content' => $data['message'],
-            'model' => $model,
-        ]);
+        $this->ensureSystemMessage($conversation->id, $user->id, $model->code);
+        $history = $this->buildHistoryForModel($conversation->id);
+        $history[] = ['role' => 'user', 'content' => $data['message']];
 
-        $assistantText = $this->buildAssistantReply($user, $data['message']);
+        try {
+            $result = $this->chatLoopService->run($user, $model, $history);
 
-        $assistantMessage = AiMessage::query()->create([
-            'conversation_id' => $conversation->id,
-            'user_id' => $user->id,
-            'role' => 'assistant',
-            'content' => $assistantText,
-            'model' => $model,
-        ]);
+            $userMessage = null;
+            $assistantMessage = null;
+            $usageSummary = null;
 
-        $conversation->update([
-            'selected_model' => $model,
-            'last_active_at' => now(),
-        ]);
+            DB::transaction(function () use (
+                $user,
+                $conversation,
+                $data,
+                $model,
+                $result,
+                &$userMessage,
+                &$assistantMessage,
+                &$usageSummary
+            ): void {
+                $userMessage = AiMessage::query()->create([
+                    'conversation_id' => $conversation->id,
+                    'user_id' => $user->id,
+                    'role' => 'user',
+                    'content' => $data['message'],
+                    'model' => $model->code,
+                    'is_hidden' => false,
+                ]);
 
-        $chunks = $this->toChunks($assistantText, 36);
+                $assistantMessage = AiMessage::query()->create([
+                    'conversation_id' => $conversation->id,
+                    'user_id' => $user->id,
+                    'role' => 'assistant',
+                    'content' => $result['assistant_text'],
+                    'model' => $model->code,
+                    'is_hidden' => false,
+                ]);
 
-        return response()->stream(function () use ($chunks, $assistantMessage, $userMessage): void {
+                $usageSummary = $this->billingService->chargeAndLog(
+                    $user,
+                    $conversation->id,
+                    $assistantMessage,
+                    $model,
+                    $result['input_tokens'],
+                    $result['output_tokens'],
+                    $result['cached_input_tokens'],
+                    $result['meta']
+                );
+
+                $conversation->update([
+                    'selected_model' => $model->code,
+                    'last_active_at' => now(),
+                ]);
+            });
+        } catch (RuntimeException $e) {
+            if ($e->getMessage() === 'Insufficient credits') {
+                return response()->json(['error' => 'Insufficient credits'], 402);
+            }
+
+            throw $e;
+        }
+
+        $chunks = $this->toChunks((string) $assistantMessage->content, 36);
+
+        return response()->stream(function () use ($chunks, $assistantMessage, $userMessage, $usageSummary): void {
             echo "event:meta\n";
             echo 'data:' . json_encode(['user_message_id' => $userMessage->id], JSON_UNESCAPED_UNICODE) . "\n\n";
             @ob_flush();
@@ -139,6 +199,7 @@ class AiChatController extends Controller
                     'model' => $assistantMessage->model,
                     'created_at' => $assistantMessage->created_at,
                 ],
+                'usage' => $usageSummary,
             ], JSON_UNESCAPED_UNICODE) . "\n\n";
             @ob_flush();
             flush();
@@ -161,27 +222,61 @@ class AiChatController extends Controller
 
         $messages = AiMessage::query()
             ->where('conversation_id', $conversation->id)
+            ->where('is_hidden', false)
             ->orderBy('id')
             ->get();
 
         return response()->json(['items' => $messages]);
     }
 
-    private function buildAssistantReply(User $user, string $prompt): string
+    /**
+     * @return array<int,array{role:string,content:string}>
+     */
+    private function buildHistoryForModel(int $conversationId): array
     {
-        $income = (float) Transaction::query()->where('user_id', $user->id)->where('type', 'income')->sum('amount');
-        $expense = (float) Transaction::query()->where('user_id', $user->id)->where('type', 'expense')->sum('amount');
-        $net = $income - $expense;
+        /** @var array<int,array{role:string,content:string}> $messages */
+        $messages = AiMessage::query()
+            ->where('conversation_id', $conversationId)
+            ->orderBy('id')
+            ->get(['role', 'content'])
+            ->map(fn ($m) => ['role' => (string) $m->role, 'content' => (string) $m->content])
+            ->all();
 
-        $base = "Based on your data: income={$income}, expense={$expense}, net={$net}. ";
+        return $messages;
+    }
 
-        $advice = $net >= 0
-            ? 'You are in positive cash flow. Keep a 10-20% reserve and review largest expense categories weekly.'
-            : 'You are in negative cash flow. Reduce non-essential expense categories first and set a strict weekly cap.';
+    private function ensureSystemMessage(int $conversationId, int $userId, string $modelCode): void
+    {
+        $exists = AiMessage::query()
+            ->where('conversation_id', $conversationId)
+            ->where('role', 'system')
+            ->exists();
+        if ($exists) {
+            return;
+        }
 
-        $followup = ' Next step: ask me for a category-level plan for the next 30 days.';
+        $prompt = $this->buildSystemPrompt();
+        AiMessage::query()->create([
+            'conversation_id' => $conversationId,
+            'user_id' => $userId,
+            'role' => 'system',
+            'content' => $prompt,
+            'model' => $modelCode,
+            'is_hidden' => true,
+        ]);
+    }
 
-        return $base . 'About your request: "' . trim($prompt) . '". ' . $advice . $followup;
+    private function buildSystemPrompt(): string
+    {
+        $base = (string) config('ai.system_prompt');
+        $toolList = [
+            'financial_summary()',
+            'forecast_30d()',
+            'create_transaction(type, amount, account_id, category_id?, description?)',
+            'create_budget_plan(name, period_from, period_to, goal_type, goal_amount?)',
+        ];
+
+        return $base . "\nAvailable tools:\n- " . implode("\n- ", $toolList);
     }
 
     /**
@@ -194,6 +289,24 @@ class AiChatController extends Controller
         for ($i = 0; $i < $length; $i += $size) {
             $chunks[] = mb_substr($text, $i, $size);
         }
+
         return $chunks;
+    }
+
+    private function resolveModelCode(?string $requested): string
+    {
+        $requested = $requested ?: (string) config('ai.default_model', 'gpt-4.1-mini');
+
+        $exists = AiModel::query()
+            ->where('code', $requested)
+            ->where('is_active', true)
+            ->exists();
+        if ($exists) {
+            return $requested;
+        }
+
+        $fallback = AiModel::query()->where('is_active', true)->orderBy('id')->value('code');
+
+        return is_string($fallback) && $fallback !== '' ? $fallback : 'gpt-4.1-mini';
     }
 }

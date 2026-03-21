@@ -20,5 +20,9 @@ class Subscription extends Model
         'end_at' => 'datetime',
         'canceled_at' => 'datetime',
     ];
-}
 
+    public function tariff()
+    {
+        return $this->belongsTo(Tariff::class, 'tariff_id');
+    }
+}

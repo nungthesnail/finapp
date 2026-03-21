@@ -1,5 +1,5 @@
 :root {
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #f7f7f7;
   background: #101010;
 }
@@ -22,10 +22,6 @@ body {
 .page {
   display: grid;
   gap: 12px;
-}
-
-.top h1 {
-  margin: 0;
 }
 
 .card {
@@ -66,6 +62,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 a {
   color: #ff7400;
   text-decoration: none;
@@ -75,10 +76,13 @@ a:hover {
   text-decoration: underline;
 }
 
+pre {
+  white-space: pre-wrap;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
 }
 
 td,
@@ -89,10 +93,6 @@ th {
   font-size: 13px;
 }
 
-pre {
-  white-space: pre-wrap;
-}
-
 .log {
   max-height: 220px;
   overflow: auto;
@@ -100,4 +100,147 @@ pre {
   border-radius: 8px;
   padding: 8px;
   margin: 8px 0;
+}
+
+.chart-list {
+  display: grid;
+  gap: 10px;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.chart-date {
+  font-size: 13px;
+  color: #d6d6d6;
+}
+
+.chart-bars {
+  display: grid;
+  gap: 6px;
+}
+
+.chart-bar {
+  border-radius: 6px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 12px;
+  color: #110b08;
+}
+
+.chart-bar.income {
+  background: #56d17d;
+}
+
+.chart-bar.expense {
+  background: #f5a65b;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.period-edit {
+  display: flex;
+  gap: 6px;
+}
+
+.app-shell,
+.public-shell {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 72px;
+}
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header-main {
+  display: grid;
+  gap: 4px;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.shell-nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.shell-content {
+  min-height: 40vh;
+  overflow-x: auto;
+}
+
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.mobile-bottom-nav a {
+  text-align: center;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.auth-card {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.error-text {
+  color: #ffb57a;
+}
+
+@media (max-width: 900px) {
+  .shell-nav {
+    display: none;
+  }
+
+  .shell-nav.open {
+    display: flex;
+  }
+
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 901px) {
+  .mobile-bottom-nav {
+    display: none;
+  }
+
+  .app-shell,
+  .public-shell {
+    padding-bottom: 0;
+  }
 }

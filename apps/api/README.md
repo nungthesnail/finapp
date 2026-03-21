@@ -23,6 +23,7 @@ Key endpoints implemented for stages 1-2:
 - `GET /api/ai/chats/last-active`
 - `GET /api/ai/chats/{id}/messages`
 - `POST /api/ai/chats/{id}/messages/stream`
+- `GET /api/ai/models`
 - `GET /api/tariffs`
 - `POST /api/subscriptions/checkout`
 - `POST /api/payments/yoomoney/webhook`
@@ -32,6 +33,7 @@ Key endpoints implemented for stages 1-2:
 - `GET|POST /api/support/chats`
 - `GET|POST /api/support/chats/{id}/messages`
 - `GET /api/admin/dashboard`
+- `GET|POST|PUT /api/admin/ai/models`
 - `GET /api/admin/support/chats`
 - `GET|POST /api/admin/support/chats/{id}/messages`
 - `POST /api/admin/subscriptions/{id}/cancel`
@@ -60,3 +62,15 @@ Stage 5 additions:
 - browser push subscription endpoint for PWA clients;
 - support chat between `USER` and `ADMIN`;
 - admin dashboard/actions with audit log writes.
+
+AI Core additions:
+- model registry with configurable token pricing (`ai_models`);
+- token usage and cost logs (`ai_usage_logs`);
+- AI debit entries in `credit_ledger`;
+- tool/function layer in chat flow (`financial_summary`, `forecast_30d`, `create_transaction`, `create_budget_plan`).
+- chat completion loop handles `finish_reason` and executes tool calls until model returns final message;
+- each conversation starts with hidden `system` message that defines assistant behavior and available tools.
+
+AI gateway:
+- `AI_GATEWAY=openai` uses OpenAI Chat Completions API (`tools`/`tool_calls`);
+- `AI_GATEWAY=mock` uses deterministic local mock (for tests/local runs without external API).

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AiChatController;
+use App\Http\Controllers\AiModelController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
@@ -70,11 +71,13 @@ Route::prefix('api')->middleware('throttle:60,1')->group(function (): void {
 
     Route::get('/ai/chats', [AiChatController::class, 'index']);
     Route::post('/ai/chats', [AiChatController::class, 'create']);
+    Route::get('/ai/models', [AiModelController::class, 'index']);
     Route::get('/ai/chats/last-active', [AiChatController::class, 'lastActive']);
     Route::get('/ai/chats/{conversationId}/messages', [AiChatController::class, 'messages']);
     Route::post('/ai/chats/{conversationId}/messages/stream', [AiChatController::class, 'stream']);
 
     Route::get('/tariffs', [BillingController::class, 'tariffs']);
+    Route::get('/billing/overview', [BillingController::class, 'overview']);
     Route::post('/subscriptions/checkout', [BillingController::class, 'checkout']);
     Route::post('/payments/yoomoney/webhook', [BillingController::class, 'webhook']);
 
@@ -91,8 +94,10 @@ Route::prefix('api')->middleware('throttle:60,1')->group(function (): void {
     Route::get('/admin/support/chats/{chatId}/messages', [SupportController::class, 'adminMessages']);
     Route::post('/admin/support/chats/{chatId}/messages', [SupportController::class, 'sendAdminMessage']);
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+    Route::get('/admin/ai/models', [AiModelController::class, 'adminIndex']);
+    Route::post('/admin/ai/models', [AiModelController::class, 'store']);
+    Route::put('/admin/ai/models/{id}', [AiModelController::class, 'update']);
     Route::post('/admin/subscriptions/{subscriptionId}/cancel', [AdminController::class, 'cancelSubscription']);
     Route::post('/admin/users/{userId}/credit-adjustment', [AdminController::class, 'adjustCredit']);
     Route::get('/admin/audit-logs', [AdminController::class, 'auditLogs']);
 });
-
