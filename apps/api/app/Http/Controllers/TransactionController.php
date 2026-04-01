@@ -7,12 +7,19 @@ use App\Models\ExpenseCategory;
 use App\Models\IncomeCategory;
 use App\Models\Transaction;
 use App\Models\UserCategoryDefault;
+use App\Services\Finance\AccountBalanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class TransactionController extends Controller
 {
+    public function __construct(
+        private readonly AccountBalanceService $accountBalanceService
+    ) {
+    }
+
     public function index(Request $request)
     {
         $user = $this->requireUser($request);
@@ -66,15 +73,25 @@ class TransactionController extends Controller
             return response()->json(['error' => 'Category does not belong to user'], 422);
         }
 
-        $item = Transaction::query()->create([
-            'user_id' => $user->id,
-            'account_id' => (int) $data['account_id'],
-            'type' => $data['type'],
-            'category_id' => (int) $data['category_id'],
-            'amount' => $data['amount'],
-            'description' => $data['description'] ?? null,
-            'occurred_at' => $data['occurred_at'] ?? now(),
-        ]);
+        $item = DB::transaction(function () use ($user, $data) {
+            $item = Transaction::query()->create([
+                'user_id' => $user->id,
+                'account_id' => (int) $data['account_id'],
+                'type' => $data['type'],
+                'category_id' => (int) $data['category_id'],
+                'amount' => $data['amount'],
+                'description' => $data['description'] ?? null,
+                'occurred_at' => $data['occurred_at'] ?? now(),
+            ]);
+
+            $account = Account::query()
+                ->where('id', (int) $data['account_id'])
+                ->where('user_id', $user->id)
+                ->firstOrFail();
+            $this->accountBalanceService->recalculate($account);
+
+            return $item;
+        });
 
         return response()->json(['item' => $item], 201);
     }
@@ -88,7 +105,11 @@ class TransactionController extends Controller
             'description' => ['sometimes', 'nullable', 'string'],
             'occurred_at' => ['sometimes', 'required', 'date'],
         ]);
-        $transaction->fill($data)->save();
+        DB::transaction(function () use ($transaction, $data): void {
+            $transaction->fill($data)->save();
+            $account = Account::query()->findOrFail($transaction->account_id);
+            $this->accountBalanceService->recalculate($account);
+        });
 
         return response()->json(['item' => $transaction]);
     }
@@ -97,9 +118,13 @@ class TransactionController extends Controller
     {
         $user = $this->requireUser($request);
         abort_if($transaction->user_id !== $user->id, 404);
-        $transaction->delete();
+        DB::transaction(function () use ($transaction): void {
+            $accountId = $transaction->account_id;
+            $transaction->delete();
+            $account = Account::query()->findOrFail($accountId);
+            $this->accountBalanceService->recalculate($account);
+        });
 
         return response()->json(['ok' => true]);
     }
 }
-

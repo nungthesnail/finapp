@@ -7,10 +7,19 @@ const auth = useAuth()
 const finance = useFinance()
 
 const filters = reactive({ type: '', account_id: '' })
-const transactionForm = reactive({ type: 'expense', account_id: '', amount: '', description: '' })
+const transactionForm = reactive({ type: 'expense', account_id: '', category_id: '', amount: '', description: '' })
 const editForm = reactive({ amount: '', description: '', occurred_at: '' })
 const editingId = ref('')
 const uiError = ref('')
+
+const createCategories = computed(() =>
+  transactionForm.type === 'income' ? finance.state.incomeCategories : finance.state.expenseCategories
+)
+
+const typeLabel = {
+  income: 'доход',
+  expense: 'расход',
+}
 
 watch(
   () => auth.state.user,
@@ -21,6 +30,7 @@ watch(
       if (!transactionForm.account_id && finance.state.accounts.length) {
         transactionForm.account_id = String(finance.state.accounts[0].id)
       }
+      applyDefaultCategory()
     } catch (error) {
       uiError.value = error.message || 'Не удалось загрузить операции'
     }
@@ -28,8 +38,34 @@ watch(
   { immediate: true }
 )
 
+watch(
+  [
+    () => transactionForm.type,
+    () => finance.state.defaults.income_category_id,
+    () => finance.state.defaults.expense_category_id,
+    () => finance.state.incomeCategories.length,
+    () => finance.state.expenseCategories.length,
+  ],
+  () => {
+    applyDefaultCategory()
+  }
+)
+
 const rows = computed(() => finance.state.transactions)
 const isEmpty = computed(() => !finance.state.loading && rows.value.length === 0)
+
+function applyDefaultCategory() {
+  const expected =
+    transactionForm.type === 'income'
+      ? String(finance.state.defaults.income_category_id || '')
+      : String(finance.state.defaults.expense_category_id || '')
+
+  const currentExists = createCategories.value.some((item) => String(item.id) === String(transactionForm.category_id))
+
+  if (!transactionForm.category_id || !currentExists) {
+    transactionForm.category_id = expected
+  }
+}
 
 function toInputDateTime(value) {
   if (!value) return ''
@@ -106,6 +142,12 @@ async function remove(id) {
           {{ account.name }}
         </option>
       </select>
+      <select v-model="transactionForm.category_id" required>
+        <option value="">Выберите категорию</option>
+        <option v-for="category in createCategories" :key="category.id" :value="String(category.id)">
+          {{ category.name }}
+        </option>
+      </select>
       <input v-model="transactionForm.amount" type="number" step="0.01" required />
       <input v-model="transactionForm.description" placeholder="Описание" />
       <button :disabled="finance.state.loading">Добавить</button>
@@ -113,7 +155,7 @@ async function remove(id) {
 
     <div class="row">
       <select v-model="filters.type">
-        <option value="">All</option>
+        <option value="">Все типы</option>
         <option value="income">доход</option>
         <option value="expense">расход</option>
       </select>
@@ -135,6 +177,7 @@ async function remove(id) {
           <th>ID</th>
           <th>Тип</th>
           <th>Счет</th>
+          <th>Категория</th>
           <th>Сумма</th>
           <th>Описание</th>
           <th>Дата</th>
@@ -144,8 +187,9 @@ async function remove(id) {
       <tbody>
         <tr v-for="item in rows" :key="item.id">
           <td>{{ item.id }}</td>
-          <td>{{ item.type }}</td>
+          <td>{{ typeLabel[item.type] || item.type }}</td>
           <td>{{ item.account_id }}</td>
+          <td>{{ item.category_id }}</td>
           <td>
             <input v-if="editingId === String(item.id)" v-model="editForm.amount" type="number" step="0.01" />
             <span v-else>{{ item.amount }}</span>
@@ -169,4 +213,3 @@ async function remove(id) {
     </table>
   </section>
 </template>
-

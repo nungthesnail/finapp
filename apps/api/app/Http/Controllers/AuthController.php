@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CreditLedgerEntry;
 use App\Models\ExpenseCategory;
 use App\Models\IncomeCategory;
 use App\Models\User;
 use App\Models\UserCategoryDefault;
-use App\Models\CreditLedgerEntry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -68,19 +68,46 @@ class AuthController extends Controller
             return;
         }
 
-        $income = IncomeCategory::query()->create([
-            'user_id' => $user->id,
-            'name' => 'Other income',
-        ]);
-        $expense = ExpenseCategory::query()->create([
-            'user_id' => $user->id,
-            'name' => 'Other expense',
-        ]);
+        $incomeNames = [
+            'Зарплата',
+            'Премия',
+            'Фриланс',
+            'Инвестиции',
+            'Подарки',
+        ];
+        $expenseNames = [
+            'Продукты',
+            'Транспорт',
+            'Жилье',
+            'Связь и интернет',
+            'Здоровье',
+            'Одежда',
+            'Развлечения',
+            'Образование',
+            'Путешествия',
+            'Прочие расходы',
+        ];
+
+        $incomeIds = [];
+        foreach ($incomeNames as $name) {
+            $incomeIds[] = IncomeCategory::query()->create([
+                'user_id' => $user->id,
+                'name' => $name,
+            ])->id;
+        }
+
+        $expenseIds = [];
+        foreach ($expenseNames as $name) {
+            $expenseIds[] = ExpenseCategory::query()->create([
+                'user_id' => $user->id,
+                'name' => $name,
+            ])->id;
+        }
 
         UserCategoryDefault::query()->create([
             'user_id' => $user->id,
-            'income_category_id' => $income->id,
-            'expense_category_id' => $expense->id,
+            'income_category_id' => $incomeIds[0],
+            'expense_category_id' => $expenseIds[0],
         ]);
     }
 
@@ -105,7 +132,7 @@ class AuthController extends Controller
             'entry_type' => 'trial_credit',
             'amount' => $amount,
             'currency' => 'RUB',
-            'description' => 'AI trial credit',
+            'description' => 'Стартовый AI-кредит',
         ]);
     }
 }

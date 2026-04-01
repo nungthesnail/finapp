@@ -5,14 +5,19 @@ namespace Tests\Feature;
 use App\Models\AiConversation;
 use App\Models\AiModel;
 use App\Models\AiUsageLog;
+use App\Models\Account;
 use App\Models\BudgetPlan;
 use App\Models\CreditLedgerEntry;
+use App\Models\ExpenseCategory;
+use App\Models\IncomeCategory;
 use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\Subscription as SubscriptionModel;
 use App\Models\Subscription;
 use App\Models\Tariff;
+use App\Models\Transaction;
 use App\Models\User;
+use App\Models\UserCategoryDefault;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -54,12 +59,130 @@ class ApiFoundationStageTwoTest extends TestCase
 
         $this->getJson('/api/transactions?type=income')
             ->assertOk()
-            ->assertJsonCount(1, 'items');
+            ->assertJsonCount(2, 'items');
 
         $summary = $this->getJson('/api/analytics/summary')->assertOk();
-        $summary->assertJsonPath('income_total', 5000);
+        $summary->assertJsonPath('income_total', 15000);
         $summary->assertJsonPath('expense_total', 1500);
-        $summary->assertJsonPath('net_total', 3500);
+        $summary->assertJsonPath('net_total', 13500);
+    }
+
+    public function test_register_creates_default_income_and_expense_categories(): void
+    {
+        $this->postJson('/api/auth/register', [
+            'phone' => '+79995550111',
+            'email' => 'defaults-user@example.com',
+            'password' => 'secret123',
+        ])->assertCreated();
+
+        $userId = (int) $this->getJson('/api/me')->assertOk()->json('user.id');
+
+        $this->assertSame(5, IncomeCategory::query()->where('user_id', $userId)->count());
+        $this->assertSame(10, ExpenseCategory::query()->where('user_id', $userId)->count());
+
+        $defaults = UserCategoryDefault::query()->where('user_id', $userId)->first();
+        $this->assertNotNull($defaults);
+        $this->assertDatabaseHas('income_categories', [
+            'id' => $defaults->income_category_id,
+            'user_id' => $userId,
+        ]);
+        $this->assertDatabaseHas('expense_categories', [
+            'id' => $defaults->expense_category_id,
+            'user_id' => $userId,
+        ]);
+    }
+
+    public function test_account_cached_balance_is_recalculated_from_transactions_chain(): void
+    {
+        $this->postJson('/api/auth/register', [
+            'phone' => '+79995550222',
+            'email' => 'balance-user@example.com',
+            'password' => 'secret123',
+        ])->assertCreated();
+
+        $accountId = (int) $this->postJson('/api/accounts', [
+            'name' => 'Карта',
+            'type' => 'card',
+            'currency' => 'RUB',
+            'balance' => 1000,
+        ])->assertCreated()->json('item.id');
+
+        $account = Account::query()->findOrFail($accountId);
+        $this->assertEquals(1000.00, (float) $account->balance);
+        $this->assertNotNull($account->balance_calculated_to_transaction_id);
+
+        $income = $this->postJson('/api/transactions', [
+            'type' => 'income',
+            'account_id' => $accountId,
+            'amount' => 500,
+            'description' => 'Пополнение',
+        ])->assertCreated()->json('item.id');
+
+        $expense = $this->postJson('/api/transactions', [
+            'type' => 'expense',
+            'account_id' => $accountId,
+            'amount' => 250,
+            'description' => 'Покупка',
+        ])->assertCreated()->json('item.id');
+
+        $account->refresh();
+        $this->assertEquals(1250.00, (float) $account->balance);
+        $this->assertSame($expense, (int) $account->balance_calculated_to_transaction_id);
+
+        $this->putJson("/api/transactions/{$income}", [
+            'amount' => 650,
+            'description' => 'Пополнение обновлено',
+        ])->assertOk();
+
+        $account->refresh();
+        $this->assertEquals(1400.00, (float) $account->balance);
+        $lastAfterUpdate = (int) Transaction::query()
+            ->where('account_id', $accountId)
+            ->orderByDesc('occurred_at')
+            ->orderByDesc('id')
+            ->value('id');
+        $this->assertSame($lastAfterUpdate, (int) $account->balance_calculated_to_transaction_id);
+
+        $this->deleteJson("/api/transactions/{$expense}")->assertOk();
+        $account->refresh();
+        $this->assertEquals(1650.00, (float) $account->balance);
+        $this->assertSame($income, (int) $account->balance_calculated_to_transaction_id);
+    }
+
+    public function test_legacy_user_without_category_defaults_can_create_account_with_initial_balance(): void
+    {
+        $user = User::factory()->create([
+            'phone' => '+79995550333',
+            'email' => 'legacy-user@example.com',
+            'role' => 'USER',
+            'password' => bcrypt('secret123'),
+        ]);
+
+        $response = $this->withSession(['uid' => $user->id])->postJson('/api/accounts', [
+            'name' => 'Legacy account',
+            'type' => 'card',
+            'currency' => 'RUB',
+            'balance' => 1500,
+        ]);
+
+        $response->assertCreated();
+        $accountId = (int) $response->json('item.id');
+
+        $this->assertDatabaseHas('accounts', [
+            'id' => $accountId,
+            'user_id' => $user->id,
+            'balance' => 1500.00,
+        ]);
+        $this->assertDatabaseHas('transactions', [
+            'account_id' => $accountId,
+            'user_id' => $user->id,
+            'type' => 'income',
+            'amount' => 1500.00,
+            'description' => 'Начальное пополнение счета',
+        ]);
+        $this->assertDatabaseHas('user_category_defaults', [
+            'user_id' => $user->id,
+        ]);
     }
 
     public function test_security_headers_are_present_on_api_responses(): void

@@ -1,4 +1,4 @@
-import { reactive, readonly } from 'vue'
+﻿import { reactive, readonly } from 'vue'
 import { apiFetch } from '../../shared/api/client'
 
 const state = reactive({
@@ -76,6 +76,48 @@ async function saveDefaults(payload = null) {
   state.defaults.expense_category_id = String(expenseId || '')
 }
 
+async function createIncomeCategory(name) {
+  await apiFetch('/income-categories', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+  await loadCategories()
+}
+
+async function updateIncomeCategory(id, name) {
+  await apiFetch(`/income-categories/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name }),
+  })
+  await loadCategories()
+}
+
+async function deleteIncomeCategory(id) {
+  await apiFetch(`/income-categories/${id}`, { method: 'DELETE' })
+  await loadCategories()
+}
+
+async function createExpenseCategory(name) {
+  await apiFetch('/expense-categories', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+  await loadCategories()
+}
+
+async function updateExpenseCategory(id, name) {
+  await apiFetch(`/expense-categories/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name }),
+  })
+  await loadCategories()
+}
+
+async function deleteExpenseCategory(id) {
+  await apiFetch(`/expense-categories/${id}`, { method: 'DELETE' })
+  await loadCategories()
+}
+
 async function loadAccounts() {
   const data = await apiFetch('/accounts')
   state.accounts = data.items
@@ -102,7 +144,6 @@ async function updateAccount(id, payload) {
       name: payload.name,
       type: payload.type,
       currency: payload.currency,
-      balance: Number(payload.balance || 0),
     }),
   })
 
@@ -140,6 +181,7 @@ async function createTransaction(payload, filters = {}) {
     body: JSON.stringify({
       type: payload.type,
       account_id: Number(payload.account_id),
+      category_id: payload.category_id ? Number(payload.category_id) : undefined,
       amount: Number(payload.amount),
       description: payload.description || '',
     }),
@@ -318,6 +360,12 @@ export function useFinance() {
     ensureFinanceLoaded,
     loadCategories,
     saveDefaults,
+    createIncomeCategory,
+    updateIncomeCategory,
+    deleteIncomeCategory,
+    createExpenseCategory,
+    updateExpenseCategory,
+    deleteExpenseCategory,
     loadAccounts,
     createAccount,
     updateAccount,
