@@ -1,4 +1,4 @@
-﻿import { reactive, readonly } from 'vue'
+import { reactive, readonly } from 'vue'
 import { apiFetch } from '../../shared/api/client'
 
 const state = reactive({
@@ -161,9 +161,14 @@ function buildTransactionsQuery(filters) {
   if (filters.type) {
     query.set('type', filters.type)
   }
-
   if (filters.account_id) {
     query.set('account_id', filters.account_id)
+  }
+  if (filters.date_from) {
+    query.set('date_from', filters.date_from)
+  }
+  if (filters.date_to) {
+    query.set('date_to', filters.date_to)
   }
 
   return query.toString() ? `?${query.toString()}` : ''
@@ -172,6 +177,7 @@ function buildTransactionsQuery(filters) {
 async function loadTransactions(filters = {}) {
   const qs = buildTransactionsQuery(filters)
   const data = await apiFetch(`/transactions${qs}`)
+  console.log(data)
   state.transactions = data.items
 }
 
@@ -308,13 +314,15 @@ async function loadSummary(filters = {}) {
   state.summary = await apiFetch(`/analytics/summary${qs}`)
 }
 
-async function loadAnalyticsTimeseries() {
-  const data = await apiFetch('/analytics/timeseries')
+async function loadAnalyticsTimeseries(filters = {}) {
+  const qs = buildDateQuery(filters)
+  const data = await apiFetch(`/analytics/timeseries${qs}`)
   state.analyticsTimeseries = data.items || []
 }
 
-async function loadAnalyticsCategories() {
-  const data = await apiFetch('/analytics/categories')
+async function loadAnalyticsCategories(filters = {}) {
+  const qs = buildDateQuery(filters)
+  const data = await apiFetch(`/analytics/categories${qs}`)
   state.analyticsCategories = data.items || []
 }
 

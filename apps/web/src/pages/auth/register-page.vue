@@ -28,6 +28,7 @@ async function submit() {
       <input v-model="form.email" type="email" placeholder="email@example.com" required />
       <input v-model="form.password" type="password" placeholder="Пароль" required />
       <button type="submit" :disabled="auth.state.loading">Создать аккаунт</button>
+      <RouterLink to="login">Уже есть аккаунт? Войдите &#8594;</RouterLink>  
     </form>
     <p v-if="error" class="error-text">{{ error }}</p>
   </section>

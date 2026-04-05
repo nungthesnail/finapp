@@ -88,7 +88,7 @@ async function remove(id) {
     <p v-if="finance.state.loading">Загрузка...</p>
     <p v-else-if="isEmpty">Счетов пока нет.</p>
 
-    <table v-else>
+    <table v-else class="accounts-table">
       <thead>
         <tr>
           <th>ID</th>

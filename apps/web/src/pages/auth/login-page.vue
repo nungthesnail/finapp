@@ -29,6 +29,7 @@ async function submit() {
       <input v-model="form.phone" placeholder="+79990000000" required />
       <input v-model="form.password" type="password" placeholder="Пароль" required />
       <button type="submit" :disabled="auth.state.loading">Войти</button>
+      <RouterLink to="register">Регистрация</RouterLink>  
     </form>
     <p v-if="error" class="error-text">{{ error }}</p>
   </section>

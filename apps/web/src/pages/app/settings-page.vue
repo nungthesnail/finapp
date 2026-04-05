@@ -230,27 +230,31 @@ async function deleteExpenseCategory(item) {
 
     <section class="card">
       <h2>Категории доходов</h2>
-      <form class="row" @submit.prevent="addIncomeCategory">
+      <form class="settings-add-form" @submit.prevent="addIncomeCategory">
         <input v-model="newIncomeName" placeholder="Новая категория дохода" />
         <button type="submit">Добавить</button>
       </form>
-      <div v-for="item in finance.state.incomeCategories" :key="item.id" class="row">
-        <input v-model="incomeDrafts[item.id]" />
-        <button type="button" @click="updateIncomeCategory(item)">Сохранить</button>
-        <button type="button" @click="deleteIncomeCategory(item)">Удалить</button>
+      <div v-for="item in finance.state.incomeCategories" :key="item.id" class="settings-category-row">
+        <input v-model="incomeDrafts[item.id]" class="settings-category-input" />
+        <div class="settings-category-actions">
+          <button type="button" @click="updateIncomeCategory(item)">Сохранить</button>
+          <button type="button" @click="deleteIncomeCategory(item)">Удалить</button>
+        </div>
       </div>
     </section>
 
     <section class="card">
       <h2>Категории расходов</h2>
-      <form class="row" @submit.prevent="addExpenseCategory">
+      <form class="settings-add-form" @submit.prevent="addExpenseCategory">
         <input v-model="newExpenseName" placeholder="Новая категория расхода" />
         <button type="submit">Добавить</button>
       </form>
-      <div v-for="item in finance.state.expenseCategories" :key="item.id" class="row">
-        <input v-model="expenseDrafts[item.id]" />
-        <button type="button" @click="updateExpenseCategory(item)">Сохранить</button>
-        <button type="button" @click="deleteExpenseCategory(item)">Удалить</button>
+      <div v-for="item in finance.state.expenseCategories" :key="item.id" class="settings-category-row">
+        <input v-model="expenseDrafts[item.id]" class="settings-category-input" />
+        <div class="settings-category-actions">
+          <button type="button" @click="updateExpenseCategory(item)">Сохранить</button>
+          <button type="button" @click="deleteExpenseCategory(item)">Удалить</button>
+        </div>
       </div>
     </section>
 

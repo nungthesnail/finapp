@@ -32,7 +32,7 @@ import AdminSupportPage from '../../pages/admin/admin-support-page.vue'
 const routes = [
   {
     path: '/',
-    redirect: '/app',
+    redirect: '/landing',
   },
   {
     path: '/landing',

@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { useAuth } from '../../app/providers/auth-provider'
 import { useFinance } from '../../features/finance/use-finance'
@@ -53,6 +53,38 @@ watch(
 
 const rows = computed(() => finance.state.transactions)
 const isEmpty = computed(() => !finance.state.loading && rows.value.length === 0)
+const incomeCategoryById = computed(() => new Map(finance.state.incomeCategories.map((item) => [String(item.id), item.name])))
+const expenseCategoryById = computed(() => new Map(finance.state.expenseCategories.map((item) => [String(item.id), item.name])))
+const accountById = computed(() => new Map(finance.state.accounts.map((item) => [String(item.id), item.name])))
+
+function categoryName(item) {
+  const id = String(item.category_id || '')
+  if (!id) {
+    return '-'
+  }
+  if (item.type === 'income') {
+    return incomeCategoryById.value.get(id) || `Категория #${id}`
+  }
+  return expenseCategoryById.value.get(id) || `Категория #${id}`
+}
+
+function signedAmount(item) {
+  const value = Number(item?.amount || 0)
+  const sign = item?.type === 'income' ? '+' : '-'
+  return `${sign}${value.toFixed(2)}`
+}
+
+function amountClass(item) {
+  return item?.type === 'income' ? 'txn-amount income' : 'txn-amount expense'
+}
+
+function accountName(accountId) {
+  const id = String(accountId || '')
+  if (!id) {
+    return '-'
+  }
+  return accountById.value.get(id) || `Счет #${id}`
+}
 
 function applyDefaultCategory() {
   const expected =
@@ -171,7 +203,8 @@ async function remove(id) {
     <p v-if="finance.state.loading">Загрузка...</p>
     <p v-else-if="isEmpty">Операций нет.</p>
 
-    <table v-else>
+    <div v-else class="transactions-table-wrap">
+    <table class="transactions-table">
       <thead>
         <tr>
           <th>ID</th>
@@ -188,11 +221,11 @@ async function remove(id) {
         <tr v-for="item in rows" :key="item.id">
           <td>{{ item.id }}</td>
           <td>{{ typeLabel[item.type] || item.type }}</td>
-          <td>{{ item.account_id }}</td>
-          <td>{{ item.category_id }}</td>
+          <td>{{ accountName(item.account_id) }}</td>
+          <td>{{ categoryName(item) }}</td>
           <td>
             <input v-if="editingId === String(item.id)" v-model="editForm.amount" type="number" step="0.01" />
-            <span v-else>{{ item.amount }}</span>
+            <span v-else :class="amountClass(item)">{{ signedAmount(item) }}</span>
           </td>
           <td>
             <input v-if="editingId === String(item.id)" v-model="editForm.description" />
@@ -211,5 +244,6 @@ async function remove(id) {
         </tr>
       </tbody>
     </table>
+    </div>
   </section>
 </template>
