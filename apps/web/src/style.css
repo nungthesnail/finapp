@@ -512,6 +512,54 @@ thead th {
   overflow-x: auto;
 }
 
+.admin-users-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.shell-content table.admin-users-table {
+  display: table;
+  min-width: 760px;
+  width: 100%;
+  overflow-x: visible;
+}
+
+.shell-content table.admin-users-table thead {
+  display: table-header-group;
+  width: auto;
+  min-width: 0;
+}
+
+.shell-content table.admin-users-table tbody {
+  display: table-row-group;
+  width: auto;
+  min-width: 0;
+}
+
+.admin-users-col-id {
+  width: 72px;
+  white-space: nowrap;
+}
+
+.admin-users-col-phone {
+  width: 190px;
+  white-space: nowrap;
+}
+
+.admin-users-col-email {
+  min-width: 240px;
+}
+
+.admin-users-col-role {
+  width: 120px;
+  white-space: nowrap;
+}
+
+.admin-users-col-created {
+  width: 200px;
+  white-space: nowrap;
+}
+
 .shell-content table.transactions-table {
   display: table;
   min-width: 760px;

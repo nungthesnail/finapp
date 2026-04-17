@@ -25,24 +25,16 @@ class SupportController extends Controller
     {
         $user = $this->requireUser($request);
         $data = $request->validate([
-            'message' => ['nullable', 'string', 'max:4000'],
+            'subject' => ['required', 'string', 'max:255'],
         ]);
 
         return DB::transaction(function () use ($user, $data) {
             $chat = SupportChat::query()->create([
                 'user_id' => $user->id,
+                'subject' => $data['subject'],
                 'status' => 'open',
                 'last_message_at' => now(),
             ]);
-
-            if (!empty($data['message'])) {
-                SupportMessage::query()->create([
-                    'chat_id' => $chat->id,
-                    'sender_user_id' => $user->id,
-                    'sender_role' => 'USER',
-                    'content' => $data['message'],
-                ]);
-            }
 
             return response()->json(['item' => $chat], 201);
         });
@@ -139,4 +131,3 @@ class SupportController extends Controller
         return response()->json(['item' => $message], 201);
     }
 }
-

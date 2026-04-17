@@ -41,10 +41,10 @@ function setSelectedChatId(chatId) {
   state.selectedChatId = String(chatId || '')
 }
 
-async function createChat(message = '') {
+async function createChat(subject) {
   const data = await apiFetch('/support/chats', {
     method: 'POST',
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ subject }),
   })
 
   await loadChats()

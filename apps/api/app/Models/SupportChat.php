@@ -8,6 +8,7 @@ class SupportChat extends Model
 {
     protected $fillable = [
         'user_id',
+        'subject',
         'status',
         'last_message_at',
     ];
@@ -16,4 +17,3 @@ class SupportChat extends Model
         'last_message_at' => 'datetime',
     ];
 }
-

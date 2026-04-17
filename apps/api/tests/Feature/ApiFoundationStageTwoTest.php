@@ -501,7 +501,7 @@ class ApiFoundationStageTwoTest extends TestCase
         ])->assertCreated();
         $userId = (int) $this->getJson('/api/me')->assertOk()->json('user.id');
 
-        $chatId = (int) $this->postJson('/api/support/chats', ['message' => 'Need help'])
+        $chatId = (int) $this->postJson('/api/support/chats', ['subject' => 'Проблема с операциями'])
             ->assertCreated()
             ->json('item.id');
         $this->postJson("/api/support/chats/{$chatId}/messages", ['content' => 'Any update?'])->assertCreated();
@@ -527,10 +527,15 @@ class ApiFoundationStageTwoTest extends TestCase
             ->assertOk()
             ->json('items');
 
-        $this->assertCount(3, $items);
-        $this->assertSame('ADMIN', $items[2]['sender_role']);
+        $this->assertCount(2, $items);
+        $this->assertSame('ADMIN', $items[1]['sender_role']);
+        $this->assertDatabaseHas('support_chats', [
+            'id' => $chatId,
+            'user_id' => $userId,
+            'subject' => 'Проблема с операциями',
+        ]);
         $this->assertDatabaseCount('support_chats', 1);
-        $this->assertDatabaseCount('support_messages', 3);
+        $this->assertDatabaseCount('support_messages', 2);
     }
 
     public function test_admin_actions_write_audit_log(): void

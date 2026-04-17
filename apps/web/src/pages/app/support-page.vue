@@ -7,7 +7,7 @@ const auth = useAuth()
 const support = useSupport()
 const selectedChatId = ref('')
 
-const form = reactive({ newChatMessage: '', message: '' })
+const form = reactive({ newChatSubject: '', message: '' })
 
 watch(
   () => auth.state.user,
@@ -30,8 +30,9 @@ watch(
 )
 
 async function onCreateChat() {
-  await support.createChat(form.newChatMessage)
-  form.newChatMessage = ''
+  if (!form.newChatSubject.trim()) return
+  await support.createChat(form.newChatSubject.trim())
+  form.newChatSubject = ''
 }
 
 async function onSendMessage() {
@@ -54,7 +55,7 @@ async function onSelectChat() {
     <p v-if="support.state.error" class="error-text">{{ support.state.error }}</p>
 
     <form class="row" @submit.prevent="onCreateChat">
-      <input v-model="form.newChatMessage" placeholder="Первое сообщение в тикете" />
+      <input v-model="form.newChatSubject" placeholder="Тема тикета/заявки" />
       <button type="submit">Создать тикет</button>
     </form>
 
@@ -62,7 +63,7 @@ async function onSelectChat() {
       <select v-model="selectedChatId" @change="onSelectChat">
         <option value="" disabled>Выберите чат поддержки</option>
         <option v-for="chat in support.state.chats" :key="chat.id" :value="String(chat.id)">
-          #{{ chat.id }} {{ chat.status }}
+          #{{ chat.id }} {{ chat.status }} · {{ chat.subject || 'Без темы' }}
         </option>
       </select>
       <button type="button" @click="support.loadChats">Обновить чаты</button>

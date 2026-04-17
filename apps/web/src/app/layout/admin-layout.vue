@@ -9,10 +9,10 @@ const user = computed(() => auth.state.user)
 const navItems = [
   { to: '/admin', label: 'Обзор' },
   { to: '/admin/users', label: 'Пользователи' },
-  { to: '/admin/tariffs', label: 'Тарифы' },
+  /* { to: '/admin/tariffs', label: 'Тарифы' },
   { to: '/admin/payments', label: 'Платежи' },
   { to: '/admin/ai-models', label: 'AI-модели' },
-  { to: '/admin/audit', label: 'Аудит' },
+  { to: '/admin/audit', label: 'Аудит' }, */
   { to: '/admin/support', label: 'Поддержка' },
 ]
 </script>
